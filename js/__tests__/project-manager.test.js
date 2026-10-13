@@ -1046,7 +1046,7 @@ describe("prepareExport", () => {
     });
 
     describe("customsample", () => {
-        const exportSample = connections => {
+        const exportSample = withAudioFile => {
             const activity = makeActivity();
             activity.blocks.blockList = [
                 {
@@ -1054,23 +1054,32 @@ describe("prepareExport", () => {
                     trash: false,
                     value: ["tuned", "data:audio/wav;base64,AAAA", "la", 4, 50],
                     container: { x: 0, y: 0 },
-                    connections,
+                    connections: [null, withAudioFile ? 1 : null, null, null],
                     isValueBlock: () => false
                 }
             ];
+            if (withAudioFile) {
+                activity.blocks.blockList.push({
+                    name: "audiofile",
+                    trash: false,
+                    value: null,
+                    container: { x: 0, y: 0 },
+                    connections: [0],
+                    isValueBlock: () => true
+                });
+            }
             return JSON.parse(new ProjectManager(activity).prepareExport())[0][1];
         };
 
         it("saves the cent adjustment and leaves the sample data to its audiofile block", () => {
-            // Dock 1 points at itself only so the export keeps a non-null connection.
-            expect(exportSample([null, 0, null, null])).toEqual([
+            expect(exportSample(true)).toEqual([
                 "customsample",
                 { value: ["tuned", "", "la", 4, 50] }
             ]);
         });
 
         it("keeps the sample data when no audiofile block is attached", () => {
-            expect(exportSample([null, null, null, null])).toEqual([
+            expect(exportSample(false)).toEqual([
                 "customsample",
                 { value: ["tuned", "data:audio/wav;base64,AAAA", "la", 4, 50] }
             ]);
